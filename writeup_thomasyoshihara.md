@@ -97,6 +97,7 @@ Since the last three revolute joints axes of the kuka robot (and many other seri
 
 We first obtain the cartesian coordinates of the wrist center.
 Location of the endeffector relative to the the base is calculated by
+
 ![alt text][image_wc]
 
 The postition and roll pitch yaw angles of the end effector are given by the ros request.
