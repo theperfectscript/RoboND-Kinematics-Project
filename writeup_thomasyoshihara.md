@@ -60,7 +60,7 @@ The homogeneous transform matrix consists of the following components:
 
 ![alt text][imagetht]
 
-After multiplication, it can be build for e.g. in python for the individual joints as this.ß
+After multiplication, it can be build for e.g. in python for the individual joints as this.
 
 ```python
 def get_tf_matrix(alpha, a, d, q):
