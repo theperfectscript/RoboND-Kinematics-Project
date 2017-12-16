@@ -17,9 +17,11 @@
 [//]: # (Image References)
 
 [image1]: ./misc_images/schemata.jpg
+[imaget23]: ./misc_images/transform_2_3.png
+[imagetht]: ./misc_images/ht_components.png
 [imaget]: ./misc_images/homogeneoustransform.jpg
 [image_wc]: ./misc_images/image-4.png
-[image2]: ./misc_images/misc3.png
+[image2]: ./misc_images/ik_angles.png
 [image3]: ./misc_images/misc2.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/972/view) Points
@@ -54,6 +56,12 @@ Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
 Following the course content, i chose d1 to intersect with the next joint to minimize the non zero parameters.
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
+The homogeneous transform matrix consists of the following components:
+
+![alt text][imagetht]
+
+After multiplication, it can be build for e.g. in python for the individual joints as this.ß
+
 ```python
 def get_tf_matrix(alpha, a, d, q):
     return Matrix([
@@ -72,8 +80,13 @@ T5_6 = get_tf_matrix(alpha5, a5, d6, q6).subs(s)
 T6_E = get_tf_matrix(alpha6, a6, d7, q7).subs(s)
 ```
 
-The homomogeneous transform between the `base_link` and the `gripper_link` can be build as this:
-![alt text][imaget]
+As a concrete example, the transformation matrix of Joint3 in respect of Joint2 would be:
+
+![alt text][imaget23]
+
+
+
+The homomogeneous transform between the `base_link` and the `gripper_link` can be build as a multiplication of all the individual transformations in order:
 
 ```python
 T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_E
@@ -86,14 +99,20 @@ We first obtain the cartesian coordinates of the wrist center.
 Location of the endeffector relative to the the base is calculated by
 ![alt text][image_wc]
 
+The postition and roll pitch yaw angles of the end effector are given by the ros request.
+
+From there, we first obtain a combined rotation matrix by substituting the values for roll (x-axis rotation), pitch (y-axis rotation) and yaw (z-axis rotation) into the regarding rotation matrices and multiplying them together.
+We also have to correct for angles and translation of the gripper. Looking at our DH parameter table, we have two rotations (-pi/2) along the z-axis and one (pi/2) along the y-axis.
+The gripper is also translated on the z-axis (0.303).
 
 
-Inverse kinematics for the first three joints can be geometrically derived via trigonometric functions given the position of the wrist center.
+Now that we know the position and rotation of the end effector, we move on to derive the angles of the first three joints via trigonomic functions:
 
+```
 theta1 = atan2(WC[1],WC[0])
 theta2 = pi/2. - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0] * WC[0] + WC[1] * WC[1]) - 0.35)
 theta3 = pi/2. - (angle_b + 0.036)
-
+```
 ![alt text][image2]
 
 ### Project Implementation

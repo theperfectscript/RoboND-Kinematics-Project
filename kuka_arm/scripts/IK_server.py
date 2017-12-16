@@ -60,8 +60,6 @@ def handle_calculate_IK(req):
         T4_5 = get_tf_matrix(alpha4, a4, d5, q5).subs(s)
         T5_6 = get_tf_matrix(alpha5, a5, d6, q6).subs(s)
         T6_E = get_tf_matrix(alpha6, a6, d7, q7).subs(s)
-
-        # Extract rotation matrices from the transformation matrices
         T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_E
         ###
 
