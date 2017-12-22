@@ -17,11 +17,14 @@
 [//]: # (Image References)
 
 [image1]: ./misc_images/schemata.jpg
-[imaget23]: ./misc_images/transform_2_3.png
+[imaget0_7]: ./misc_images/all_transforms.png
+[imaget0_e]: ./misc_images/transform0_e.png
 [imagetht]: ./misc_images/ht_components.png
 [imaget]: ./misc_images/homogeneoustransform.jpg
 [image_wc]: ./misc_images/image-4.png
+[image_pythagoras]: ./misc_images/pythagoras01.png
 [image2]: ./misc_images/ik_angles.png
+[image3_e]: ./misc_images/transform3_e.png
 [image3]: ./misc_images/misc2.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/972/view) Points
@@ -80,11 +83,9 @@ T5_6 = get_tf_matrix(alpha5, a5, d6, q6).subs(s)
 T6_E = get_tf_matrix(alpha6, a6, d7, q7).subs(s)
 ```
 
-As a concrete example, the transformation matrix of Joint3 in respect of Joint2 would be:
+Or concretely written out:
 
-![alt text][imaget23]
-
-
+![alt text][imaget0_7]
 
 The homomogeneous transform between the `base_link` and the `gripper_link` can be build as a multiplication of all the individual transformations in order:
 
@@ -92,29 +93,87 @@ The homomogeneous transform between the `base_link` and the `gripper_link` can b
 T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_E
 ```
 
+Or concretely:
+
+![alt text][imaget0_e]
+
+Where px, py and pz are the end effectors x, y and z position and roll, pitch and yaw the orientation.
+
+I derived these matrices via simplification.
+
 #### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
 Since the last three revolute joints axes of the kuka robot (and many other serial robots as well) intersect at a single point and thus can be combined as a sperical joint, the end effectors position and orientation of this robot can be decoupled.
 
-We first obtain the cartesian coordinates of the wrist center.
-Location of the endeffector relative to the the base is calculated by
+##### Inverse Position
+
+We first obtain the cartesian coordinates of the wrist center by:
 
 ![alt text][image_wc]
 
+Where R0_6 is named ROT_E in my code.
+
 The postition and roll pitch yaw angles of the end effector are given by the ros request.
 
-From there, we first obtain a combined rotation matrix by substituting the values for roll (x-axis rotation), pitch (y-axis rotation) and yaw (z-axis rotation) into the regarding rotation matrices and multiplying them together.
-We also have to correct for angles and translation of the gripper. Looking at our DH parameter table, we have two rotations (-pi/2) along the z-axis and one (pi/2) along the y-axis.
-The gripper is also translated on the z-axis (0.303).
+From there, we first obtain the combined rotation matrix R0_6 by substituting the values for roll (x-axis rotation), pitch (y-axis rotation) and yaw (z-axis rotation) into the regarding rotation matrices and multiplying them together.
+We also have to correct for angles and translation of the gripper. Looking at our DH parameter table, we have two rotations (-pi/2) along the z-axis and one (pi/2) along the y-axis (R0_EE), all intrinsic.
+The gripper is also translated on the z-axis (0.303) (d).
 
+Now that we know the position of the wrist center, we can derive the angles of the first three joints.
 
-Now that we know the position and rotation of the end effector, we move on to derive the angles of the first three joints via trigonomic functions:
+![alt text][image2]
+
+We first obtain the three sides of the triangle between Joint2, Joint3 and WC:
+
+```s_a (A) = sqrt(pow(a3,2) + pow(d4,2)) = 1.501```
+
+(Discovered with the help of the slack discussions)
+
+![alt text][image_pythagoras]
+
+As illustrated in the picture above, we utilize pythagoras to find side B since the bottom side of the triangle is dependent on theta 1:
+```
+s_b (B) = sqrt(pow((sqrt(WC[0] * WC[0] + WC[1] * WC[1]) - 0.35), 2) + pow((WC[2] - 0.75), 2))
+```
+
+C is self explainatory:
+```
+s_c (C) = a2 = 1.25
+```
+
+Now calculating the three angles is just a matter of using the cosine law:
+```
+angle_a = acos((s_b * s_b + s_c * s_c - s_a * s_a) / (2 * s_b * s_c))
+angle_b = acos((s_a * s_a + s_c * s_c - s_b * s_b) / (2 * s_a * s_c))
+angle_c = acos((s_a * s_a + s_b * s_b - s_c * s_c) / (2 * s_a * s_b))
+```
+
+Theta1 is simple since it only involves projecting the x and z coordinates of the wrist center from the top via atan2.
 
 ```
 theta1 = atan2(WC[1],WC[0])
+```
+
+Theta2 is 90 degrees - angle_a and the angle to WC.x and y
+
+```
 theta2 = pi/2. - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0] * WC[0] + WC[1] * WC[1]) - 0.35)
+```
+
+For theta3 we need to account the small offset angle between J4 and J5 which is atan2(a3, s_a)
+
+```
 theta3 = pi/2. - (angle_b + 0.036)
 ```
-![alt text][image2]
+
+
+##### Inverse Orientation
+
+Now we can substitute theta 1, 2, 3 into their respective rotation matrices and multiply R_3_E with the inverse of R0_3 to solve all variables.
+
+Folowing [Lesson 11: Forward and Inverse Kinematics, 8. Euler Angles from a Rotation Matrix](https://classroom.udacity.com/nanodegrees/nd209/parts/c199593e-1e9a-4830-8e29-2c86f70f489e/modules/8855de3f-2897-46c3-a805-628b5ecf045b/lessons/87c52cd9-09ba-4414-bc30-24ae18277d24/concepts/a124f98b-1ed5-45f5-b8eb-6c40958c1a6b) i derived the angles from the concrete R3_E Matrix:
+
+![alt text][image3_e]
+
 
 ### Project Implementation
 
